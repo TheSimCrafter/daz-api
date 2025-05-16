@@ -27,4 +27,9 @@ public class DaZController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/artikel/startseite")
+    public ResponseEntity<ArtikelResponse> getArtikelStartseite() {
+        return getArtikel(0);
+    }
+
 }
