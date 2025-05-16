@@ -1,8 +1,10 @@
 package de.lebk.dazapi.controller;
 
 import de.lebk.dazapi.data.entities.Artikel;
+import de.lebk.dazapi.data.entities.Themenbereich;
 import de.lebk.dazapi.responses.AkkordeonArtikelResponse;
 import de.lebk.dazapi.responses.AkkordeonResponse;
+import de.lebk.dazapi.responses.AkkordeonThemenbereichResponse;
 import de.lebk.dazapi.responses.ArtikelResponse;
 import de.lebk.dazapi.service.ArtikelService;
 import de.lebk.dazapi.service.ThemenbereichService;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -19,23 +22,38 @@ import java.util.List;
 public class AkkordeonController {
 
     @Autowired
-    private ThemenbereichService service;
+    private ArtikelService artikelService;
 
     @Autowired
-    private ArtikelService artikelService;
+    private ThemenbereichService themenbereichService;
 
     @GetMapping
     public ResponseEntity<AkkordeonResponse> getAkkordeon() {
-        AkkordeonArtikelResponse[] artikelResponses =
-                new AkkordeonArtikelResponse[(int) artikelService.getArtikelCount()];
-        List<Artikel> artikelList = artikelService.getAllArtikel();
-        for (int i = 0; i < artikelList.size(); i++) {
-            Artikel artikel = artikelList.get(i);
-            AkkordeonArtikelResponse artikelResponse =
-                    new AkkordeonArtikelResponse(artikel.getId(), artikel.getTitel());
-            artikelResponses[i] = artikelResponse;
+        List<Themenbereich> themenbereiche = themenbereichService.getAllThemenbereich();
+
+        if (themenbereiche == null || themenbereiche.isEmpty()) {
+            return ResponseEntity.noContent().build();
         }
-        //TODO fertig machen
-        return ResponseEntity.ok(new AkkordeonResponse(null));
+
+        List<AkkordeonThemenbereichResponse> akkordeonThemenbereichResponses = themenbereiche.stream()
+                .map(this::mapToAkkordeonThemenbereichResponse)
+                .toList();
+
+        return ResponseEntity.ok(new AkkordeonResponse(akkordeonThemenbereichResponses));
     }
+
+    private AkkordeonThemenbereichResponse mapToAkkordeonThemenbereichResponse(Themenbereich themenbereich) {
+        List<Artikel> artikelList = artikelService.getArtikelByThemenbereichSchl(themenbereich);
+
+        AkkordeonArtikelResponse[] artikelResponses = artikelList.stream()
+                .map(artikel -> new AkkordeonArtikelResponse(artikel.getId(), artikel.getTitel()))
+                .toArray(AkkordeonArtikelResponse[]::new);
+
+        return new AkkordeonThemenbereichResponse(
+                themenbereich.getId(),
+                themenbereich.getTitel(),
+                artikelResponses
+        );
+    }
+
 }
