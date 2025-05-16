@@ -1,17 +1,30 @@
 package de.lebk.dazapi.controller;
 
+import de.lebk.dazapi.data.entities.Artikel;
+import de.lebk.dazapi.responses.ArtikelResponse;
+import de.lebk.dazapi.service.ArtikelService;
+import jakarta.websocket.server.PathParam;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
-@Controller
-@RequestMapping
+@RestController
+@RequestMapping("/api")
 public class DaZController {
 
-    @GetMapping
-    @ResponseBody
-    public String index() {
-        return "Moin";
+    @Autowired
+    private ArtikelService artikelService;
+
+    @GetMapping("/artikel/{id}")
+    public ResponseEntity<ArtikelResponse> getArtikel(@PathVariable("id") Integer id) {
+        Artikel artikel = artikelService.getArtikelById(id);
+        if(artikel == null) {
+            return ResponseEntity.notFound().build();
+        }
+        ArtikelResponse response = new ArtikelResponse(artikel.getId(), artikel.getThemenbereichSchl().getTitel(),
+                artikel.getEinfach(), artikel.getFortgeschritten(), artikel.getExperte());
+        return ResponseEntity.ok(response);
     }
+
 }
