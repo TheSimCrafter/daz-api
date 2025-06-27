@@ -27,9 +27,9 @@ public class DaZController {
         ArtikelResponse response;
         try {
             response = new ArtikelResponse(artikel.getId(), artikel.getThemenbereichSchl().getTitel(),
-                    artikelService.getArtikelTextByName(artikel.getEinfach(), artikel.getThemenbereichSchl()),
-                artikelService.getArtikelTextByName(artikel.getFortgeschritten(), artikel.getThemenbereichSchl()),
-                artikelService.getArtikelTextByName(artikel.getExperte(), artikel.getThemenbereichSchl()));
+                    artikelService.getArtikelTextByName(artikel.getEinfach(), artikel.getThemenbereichSchl(), artikel.getTitel()),
+                artikelService.getArtikelTextByName(artikel.getFortgeschritten(), artikel.getThemenbereichSchl(), artikel.getTitel()),
+                artikelService.getArtikelTextByName(artikel.getExperte(), artikel.getThemenbereichSchl(), artikel.getTitel()));
         } catch (FileNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }

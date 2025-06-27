@@ -26,12 +26,12 @@ public class ArtikelService {
         return artikelRepository.findAllByThemenbereichSchl(themenbereich);
     }
 
-    public String getArtikelTextByName(String name, Themenbereich themenbereichSchl) throws FileNotFoundException {
-        System.out.println("../../../resources/" + name);
+    public String getArtikelTextByName(String name, Themenbereich themenbereichSchl, String titel) throws FileNotFoundException {
+        System.out.println("../../../resources/markdowns/" + themenbereichSchl.getTitel() + "/" + name);
 
         String path = System.getProperty("user.dir");
 
-        BufferedReader reader = new BufferedReader(new FileReader(path + "/src/main/resources/markdowns/" + themenbereichSchl.getTitel().toLowerCase() + "/" +name));
+        BufferedReader reader = new BufferedReader(new FileReader(path + "/src/main/resources/markdowns/" + themenbereichSchl.getTitel() + "/" + titel + "/" + name));
         return reader.lines().collect(Collectors.joining("\n"));
     }
 
