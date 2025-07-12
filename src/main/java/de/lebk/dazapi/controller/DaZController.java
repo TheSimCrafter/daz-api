@@ -41,4 +41,8 @@ public class DaZController {
         return getArtikel(0);
     }
 
+    @GetMapping("/ping")
+    public ResponseEntity<String> ping() {
+        return ResponseEntity.ok("pong");
+    }
 }
