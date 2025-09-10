@@ -1,23 +1,17 @@
-package de.lebk.dazapi.service;
-
-import de.lebk.dazapi.data.entities.Artikel;
-import de.lebk.dazapi.data.entities.Themenbereich;
-import de.lebk.dazapi.data.repositories.ArtikelRepository;
-import de.lebk.dazapi.data.repositories.ThemenbereichRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.util.Objects;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
 
 @Service
 public class MarkdownImportService {
+
     @Autowired
     private ArtikelRepository artikelRepository;
 
@@ -27,9 +21,6 @@ public class MarkdownImportService {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @Value("classpath:markdowns")
-    private Resource markdownsRoot;
-
     @PostConstruct
     public void init() throws IOException {
         artikelRepository.deleteAll();
@@ -38,26 +29,40 @@ public class MarkdownImportService {
         jdbcTemplate.execute("ALTER TABLE artikel AUTO_INCREMENT = 1");
         jdbcTemplate.execute("ALTER TABLE themenbereich AUTO_INCREMENT = 1");
 
-        File rootDir = markdownsRoot.getFile();
-        for (File themenbereichDir : Objects.requireNonNull(rootDir.listFiles(File::isDirectory))) {
-            String themenbereichName = themenbereichDir.getName();
-            Themenbereich themenbereich = new Themenbereich(themenbereichName);
-            themenbereich = themenbereichRepository.save(themenbereich);
+        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 
-            for (File artikelDir : Objects.requireNonNull(themenbereichDir.listFiles(File::isDirectory))) {
-                String titel = artikelDir.getName();
-                String einfach = readMarkdownFile(artikelDir, "einfach.md");
-                String fortgeschritten = readMarkdownFile(artikelDir, "fortgeschritten.md");
-                String schwer = readMarkdownFile(artikelDir, "schwer.md");
+        // Alle Themenbereiche (Ordner)
+        Resource[] themenbereiche = resolver.getResources("classpath:/markdowns/*/");
 
-                Artikel artikel = new Artikel(titel, "einfach.md", "fortgeschritten.md", "schwer.md", themenbereich);
+        for (Resource themenbereichRes : themenbereiche) {
+            String themenbereichName = themenbereichRes.getFilename();
+            Themenbereich themenbereich = themenbereichRepository.save(new Themenbereich(themenbereichName));
+
+            // Alle Artikel-Ordner pro Themenbereich
+            Resource[] artikelOrdner = resolver.getResources("classpath:/markdowns/" + themenbereichName + "/*/");
+
+            for (Resource artikelRes : artikelOrdner) {
+                String titel = artikelRes.getFilename();
+
+                String einfach = readMarkdown("classpath:/markdowns/" + themenbereichName + "/" + titel + "/einfach.md");
+                String fortgeschritten = readMarkdown("classpath:/markdowns/" + themenbereichName + "/" + titel + "/fortgeschritten.md");
+                String schwer = readMarkdown("classpath:/markdowns/" + themenbereichName + "/" + titel + "/schwer.md");
+
+                Artikel artikel = new Artikel(titel, einfach, fortgeschritten, schwer, themenbereich);
                 artikelRepository.save(artikel);
             }
         }
     }
 
-    private String readMarkdownFile(File dir, String filename) throws IOException {
-        File file = new File(dir, filename);
-        return file.exists() ? Files.readString(file.toPath()) : null;
+    private String readMarkdown(String location) throws IOException {
+        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+        Resource res = resolver.getResource(location);
+
+        if (!res.exists()) return null;
+
+        try (InputStream in = res.getInputStream();
+             Scanner scanner = new Scanner(in, StandardCharsets.UTF_8)) {
+            return scanner.useDelimiter("\\A").hasNext() ? scanner.next() : "";
+        }
     }
 }
