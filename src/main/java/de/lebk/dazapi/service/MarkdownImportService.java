@@ -1,7 +1,14 @@
+package de.lebk.dazapi.service;
+
+import de.lebk.dazapi.data.entities.Artikel;
+import de.lebk.dazapi.data.entities.Themenbereich;
+import de.lebk.dazapi.data.repositories.ArtikelRepository;
+import de.lebk.dazapi.data.repositories.ThemenbereichRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
