@@ -36,40 +36,39 @@ jobs:
       # 5. Upload + Restart
       - name: Deploy JAR
         run: |
-          # Variablen
           APP_NAME=daz-api
           RELEASE_DIR=/opt/lingudisc/api/releases/$(date +%Y%m%d%H%M%S)
-          CURRENT_DIR=/opt/lingudisc/api/current
+          CURRENT_LINK=/opt/lingudisc/api/current   # <— wichtig: nicht mehr als DIR behandeln
           REMOTE_USER=${{ secrets.SSH_USER }}
           REMOTE_HOST=${{ secrets.SSH_HOST }}
           JAR_FILE=$(ls target/*.jar | head -n1)
 
           echo "Release dir: $RELEASE_DIR"
-          
+
           # Release-Ordner anlegen
           ssh $REMOTE_USER@$REMOTE_HOST "mkdir -p $RELEASE_DIR"
 
           # JAR hochladen
           scp "$JAR_FILE" $REMOTE_USER@$REMOTE_HOST:$RELEASE_DIR/app.jar
 
-          # Symlink setzen
-          ssh $REMOTE_USER@$REMOTE_HOST "ln -sfn $RELEASE_DIR $CURRENT_DIR"
+          # Symlink setzen (current -> release)
+          ssh $REMOTE_USER@$REMOTE_HOST "ln -sfn $RELEASE_DIR $CURRENT_LINK"
 
           # Falls alter Prozess läuft -> killen
           ssh $REMOTE_USER@$REMOTE_HOST "
-            if [ -f $CURRENT_DIR/app.pid ]; then
-              OLD_PID=\$(cat $CURRENT_DIR/app.pid)
+            if [ -f $CURRENT_LINK/app.pid ]; then
+              OLD_PID=\$(cat $CURRENT_LINK/app.pid)
               if kill -0 \$OLD_PID 2>/dev/null; then
                 echo 'Stopping old process...'
                 kill \$OLD_PID
                 sleep 3
               fi
-              rm -f $CURRENT_DIR/app.pid
+              rm -f $CURRENT_LINK/app.pid
             fi
           "
 
           # Neues JAR starten
           ssh $REMOTE_USER@$REMOTE_HOST "
-            nohup java -jar $CURRENT_DIR/app.jar > $CURRENT_DIR/app.log 2>&1 &
-            echo \$! > $CURRENT_DIR/app.pid
+            nohup java -jar $CURRENT_LINK/app.jar > $CURRENT_LINK/app.log 2>&1 &
+            echo \$! > $CURRENT_LINK/app.pid
           "
